@@ -1,0 +1,203 @@
+gerrit
+http://10.100.2.28:8091/#/q/status:open
+guanqg 123456x
+10.103.3.90  22
+
+扫码库：
+svn://10.100.2.28/软件svn目录结构/软件内部资料/基础软件/内部公用/二维码库/Android/PAD/library2.0/lib-robot-connector-comm2.1.1.29.zip
+
+http://support.robotis.com/en/
+Home > Product Information > DARWIN-OP > Development > Tools
+
+目前：
+10.100.2.230
+
+\\10.100.2.28\android
+wangdd
+PartX2017
+
+vim bootable/bootloader/lk/project/abilix_s_l.mk +19  修改开机启动
+
+h34转换成 abilixh5
+
+删除打包之后的
+out/target/product/abilix_s_l/obj/BOOTLOADER_OBJ
+out/target/product/abilix_s_l/logo.bin
+
+90服务器上传至28服务器
+scp -r C_1.0.1_00C-to-C_1.3.0_001.zip  wangdd@10.100.2.28:/home/samba/android/Rom_Images/softwares/abilix_H5_l/H204/20180418_H_1.2.0_001/
+
+代码上传服务器
+git status：对比修改状态
+git pull：拉下最新的代码
+git different:查找不同的地方；
+git checkout HEAD vendor/abilix/abilix_apk/abilix_apk.mk：还原该文件；
+
+git commit -m"release ccc" 1.c 2.apk 3.lk：提交
+git config --global user.email "guanqingguang0914@163.com"
+git config --global user.name "guanqg"
+git commit -m"release ccc" 1.c 2.apk 3.lk：提交
+
+git push origin master:refs/for/master：上传至服务器
+git log：显示上传的log，第一个即是
+
+http://10.100.2.28:8091/#/q/status:open：服务器地址网站
+
+
+先归零，再释放，再清除，再标定，再归零
+
+public interface CallBackInterface {  
+    void result(Bitmap bm);  
+}
+
+public class Callee {  
+    private final String IMGURL = "http://f.hiphotos.baidu.com/zhidao/pic/item/b21bb051f8198618a323ac464bed2e738ad4e688.jpg";  
+    //持有接口变量  
+    CallBackInterface mInterface;  
+  
+    Callee(CallBackInterface theInterface) {  
+        //这里是关键，把外部的接口实例引用到该类，给变量赋值  
+        mInterface = theInterface;  
+        //创建对象的时候执行下载  
+        executeDown();  
+    }  
+  
+    public void executeDown() {  
+        new Thread(new Runnable() {  
+            @Override  
+            public void run() {  
+                try {  
+                    HttpURLConnection conn = (HttpURLConnection) new URL(IMGURL).openConnection();  
+                    conn.setConnectTimeout(5 * 1000);  
+                    conn.setRequestMethod("GET");  
+                    mInterface.result(BitmapFactory.decodeStream(conn.getInputStream()));  
+                } catch (IOException e) {  
+                    e.printStackTrace();  
+                }  
+            }  
+        }).start();  
+    }  
+}  
+
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {  
+    private ImageView imgv;  
+    private Button downImgBtn;  
+  
+    @Override  
+    protected void onCreate(Bundle savedInstanceState) {  
+        super.onCreate(savedInstanceState);  
+        setContentView(R.layout.activity_main);  
+        imgv = (ImageView) findViewById(R.id.imgv);  
+        downImgBtn = (Button) findViewById(R.id.downImgBtn);  
+        //点击按钮去下载  
+        downImgBtn.setOnClickListener(this);  
+    }  
+  
+    @Override  
+    public void onClick(View v) {  
+        //从接口回调得到数据,因为下载是在子线程中，所以这里要变到主线程中设置图片  
+        new Callee(new CallBackInterface() {  
+            @Override  
+            public void result(final Bitmap bm) {  
+                runOnUiThread(new Runnable() {  
+                    @Override  
+                    public void run() {  
+                        imgv.setImageBitmap(bm);  
+                    }  
+                });  
+            }  
+        });  
+    }  
+} 
+
+接口回调
+Class A实现接口CallBack callback——背景1 
+class A中包含一个class B的引用b ——背景2 
+class B有一个参数为callback的方法f(CallBack callback) ——背景3 
+A的对象a调用B的方法 f(CallBack callback) ——A类调用B类的某个方法 C
+然后b就可以在f(CallBack callback)方法中调用A的方法 ——B类调用A类的某个方法D
+
+public interface CallBack {  
+/** 
+     * 这个是小李知道答案时要调用的函数告诉小王，也就是回调函数 
+     * @param result 是答案 
+     */  
+    public void solve(String result);  
+}  
+
+A：
+public class Wang implements CallBack {  
+    /** 
+     * 小李对象的引用 
+     * 相当于----->背景二 
+     */  
+    private Li li;   
+  
+    /** 
+     * 小王的构造方法，持有小李的引用 
+     * @param li 
+     */  
+    public Wang(Li li){  
+        this.li = li;  
+    }  
+      
+    /** 
+     * 小王通过这个方法去问小李的问题 
+     * @param question  就是小王要问的问题,1 + 1 = ? 
+     */  
+    public void askQuestion(final String question){  
+        //这里用一个线程就是异步，  
+        new Thread(new Runnable() {  
+            @Override  
+            public void run() {  
+                /** 
+                 * 小王调用小李中的方法，在这里注册回调接口 
+                 * 这就相当于A类调用B的方法C 
+                 */  
+                li.executeMessage(Wang.this, question);   
+            }  
+        }).start();  
+          
+        //小网问完问题挂掉电话就去干其他的事情了，诳街去了  
+        play();  
+    }  
+  
+    public void play(){  
+        System.out.println("我要逛街去了");  
+    }  
+  
+    /** 
+     * 小李知道答案后调用此方法告诉小王，就是所谓的小王的回调方法 
+     */  
+    @Override  
+    public void solve(String result) {  
+        System.out.println("小李告诉小王的答案是--->" + result);  
+    }      
+} 
+B：
+public class Li {  
+    /** 
+     * 相当于B类有参数为CallBack callBack的f()---->背景三 
+     * @param callBack   
+     * @param question  小王问的问题 
+     */  
+    public void executeMessage(CallBack callBack, String question){  
+        System.out.println("小王问的问题--->" + question);  
+          
+        //模拟小李办自己的事情需要很长时间  
+        for(int i=0; i<10000;i++){  
+              
+        }  
+          
+        /** 
+         * 小李办完自己的事情之后想到了答案是2 
+         */  
+        String result = "答案是2";  
+          
+        /** 
+         * 于是就打电话告诉小王，调用小王中的方法 
+         * 这就相当于B类反过来调用A的方法D 
+         */  
+        callBack.solve(result);   
+    }  
+}  
